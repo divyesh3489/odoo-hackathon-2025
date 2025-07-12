@@ -8,6 +8,7 @@ import { useApp } from '../../contexts/AppContext';
 import { LoginModal } from '../Auth/LoginModal';
 import { RegisterModal } from '../Auth/RegisterModal';
 import { ForgotPasswordModal } from '../Auth/ForgotPasswordModal';
+import { Portal } from "../common/Portal"; // adjust path as needed
 
 export const Navigation = () => {
   const [location] = useLocation();
@@ -203,24 +204,25 @@ export const Navigation = () => {
       </div>
 
       {/* Auth Modals */}
-      <LoginModal
-        isOpen={activeModal === 'login'}
-        onClose={() => setActiveModal(null)}
-        onSwitchToRegister={() => setActiveModal('register')}
-        onSwitchToForgotPassword={() => setActiveModal('forgot-password')}
-      />
-
-      <RegisterModal
-        isOpen={activeModal === 'register'}
-        onClose={() => setActiveModal(null)}
-        onSwitchToLogin={() => setActiveModal('login')}
-      />
-
-      <ForgotPasswordModal
-        isOpen={activeModal === 'forgot-password'}
-        onClose={() => setActiveModal(null)}
-        onSwitchToLogin={() => setActiveModal('login')}
-      />
+      // ...inside your Navigation component's return:
+      <Portal>
+        <LoginModal
+          isOpen={activeModal === 'login'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToRegister={() => setActiveModal('register')}
+          onSwitchToForgotPassword={() => setActiveModal('forgot-password')}
+        />
+        <RegisterModal
+          isOpen={activeModal === 'register'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToLogin={() => setActiveModal('login')}
+        />
+        <ForgotPasswordModal
+          isOpen={activeModal === 'forgot-password'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToLogin={() => setActiveModal('login')}
+        />
+      </Portal>
     </nav>
   );
 };
