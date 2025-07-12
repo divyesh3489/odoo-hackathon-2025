@@ -12,13 +12,6 @@ const Dashboard = () => {
   const { isAuthenticated, user } = useAuth();
   const [, navigate] = useLocation();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/');
-      return;
-    }
-  }, [isAuthenticated, navigate]);
-
   if (!isAuthenticated) {
     return null;
   }

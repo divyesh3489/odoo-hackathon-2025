@@ -47,9 +47,11 @@ axiosInstance.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return axiosInstance(originalRequest);
         } else {
-          // Refresh failed, remove tokens and redirect
+          // Refresh failed, remove tokens but don't redirect for profile endpoint
           removeToken();
-          window.location.href = '/';
+          if (!originalRequest.url?.includes('/api/v1/profile/')) {
+            window.location.href = '/';
+          }
           throw new ApiError(401, 'Authentication required');
         }
       }
@@ -57,7 +59,10 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 401) {
       removeToken();
-      window.location.href = '/';
+      // Don't redirect for profile endpoint during app initialization
+      if (!originalRequest?.url?.includes('/api/v1/profile/')) {
+        window.location.href = '/';
+      }
       throw new ApiError(401, 'Authentication required');
     }
 

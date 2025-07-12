@@ -182,9 +182,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (token) {
       set({ isLoading: true });
       try {
-        const userRaw = await userApi.getProfile();
+        const userRaw: any = await userApi.getProfile();
   
-        const user = (userRaw && typeof userRaw === 'object') ? (userRaw as User) : null;
+        const user = (userRaw && typeof userRaw === 'object') ? (userRaw.data as User) : null;
         
         if (user) {
           setUser(user); // Save to localStorage for offline access
