@@ -101,7 +101,8 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "Hackout",
         "USER": "postgres", 
-        "PASSWORD": "Admin@123",
+        # "PASSWORD": "Admin@123",
+        "PASSWORD": "password",
         "HOST": "localhost",
         "PORT": "5432",
     }
