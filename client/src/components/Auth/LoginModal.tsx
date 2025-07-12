@@ -9,6 +9,8 @@ import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useToast } from '../../hooks/use-toast';
+import { useLocation } from 'wouter';
+import { getToken, getRefreshToken } from '../../utils/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -33,6 +35,7 @@ export const LoginModal = ({
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error: errorStore } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const {
     register,
@@ -52,6 +55,10 @@ export const LoginModal = ({
       });
       onClose();
       reset();
+      // Log tokens for debugging
+      console.log('Access Token:', getToken());
+      console.log('Refresh Token:', getRefreshToken());
+      navigate('/');
     } catch (error) {
       toast({
         title: "Login failed",

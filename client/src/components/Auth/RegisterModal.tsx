@@ -9,6 +9,8 @@ import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useToast } from '../../hooks/use-toast';
+import { useLocation } from 'wouter';
+import { getToken, getRefreshToken } from '../../utils/auth';
 
 // Separate validation schemas for different validation steps
 const basicFieldsSchema = z.object({
@@ -57,6 +59,7 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register: authRegister, isLoading, error: errorStore } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const {
     register,
@@ -120,6 +123,10 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
       });
       onClose();
       reset();
+      // Log tokens for debugging
+      console.log('Access Token:', getToken());
+      console.log('Refresh Token:', getRefreshToken());
+      navigate('/');
     } catch (error) {
       toast({
         title: "Registration failed",

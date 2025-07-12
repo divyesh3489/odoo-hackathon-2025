@@ -9,3 +9,4 @@ class CustomPagination(pagination.LimitOffsetPagination):
             return None
 
         return super(CustomPagination, self).paginate_queryset(queryset=queryset, request=request, view=view)
+
