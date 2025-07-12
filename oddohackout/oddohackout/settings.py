@@ -55,6 +55,7 @@ THIRD_PARTY_APPS = [
 USER_APP = [
     "user_management",  
     "skills"
+    "ratings",
 ]
 
 
