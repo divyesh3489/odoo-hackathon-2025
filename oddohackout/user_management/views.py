@@ -75,22 +75,36 @@ class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
 
 class GetUserListView(APIView):
     def get(self, request, *args, **kwargs):
-        user_list = []
+        # Get pagination parameters
+        limit = int(request.GET.get('limit', 10))
+        current_page = int(request.GET.get('current_page', 1))
+        
+        # Calculate offset
+        offset = (current_page - 1) * limit
+        
         User = get_user_model()
-        for user in User.objects.all():
-            if user.is_banned or user.is_privete or not user.is_active:
-                continue
+        
+        # Filter active users
+        active_users = User.objects.filter(
+            is_banned=False,
+            is_privete=False,
+            is_active=True
+        )
+        
+        # Get total count for pagination info
+        total_users = active_users.count()
+        
+        # Apply pagination
+        paginated_users = active_users[offset:offset + limit]
+        
+        user_list = []
+        for user in paginated_users:
             user_data = UserSerializer(user).data
             want_skills = UserSkills.objects.filter(user=user, type='want')
             offer_skills = UserSkills.objects.filter(user=user, type='offer')
             user_data['want_skills'] = UserSkillsSerializer(want_skills, many=True).data
             user_data['offer_skills'] = UserSkillsSerializer(offer_skills, many=True).data
-            ratings_stats = Rating.objects.filter(receiver=user).aggregate(
-                average_rating=Avg('rating_count'),
-                total_ratings=Count('id')
-            )
-            user_data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
-            user_data['total_ratings'] = ratings_stats['total_ratings']
+
             # Get user's rating statistics
             ratings_stats = Rating.objects.filter(receiver=user).aggregate(
                 average_rating=Avg('rating_count'),
@@ -102,7 +116,24 @@ class GetUserListView(APIView):
             
             user_list.append(user_data)
 
-        return Response(user_list, status=status.HTTP_200_OK)
+        # Calculate pagination metadata
+        total_pages = (total_users + limit - 1) // limit
+        has_next = current_page < total_pages
+        has_previous = current_page > 1
+
+        response_data = {
+            'users': user_list,
+            'pagination': {
+                'current_page': current_page,
+                'total_pages': total_pages,
+                'total_users': total_users,
+                'limit': limit,
+                'has_next': has_next,
+                'has_previous': has_previous
+            }
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
 class GetUserByIdView(APIView):
     def get(self, request, pk, *args, **kwargs):
         try:
