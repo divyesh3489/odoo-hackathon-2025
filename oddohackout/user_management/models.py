@@ -84,4 +84,7 @@ class Users(AbstractUser,PermissionsMixin):
             return []
         choice_dict = dict(self.AvailabilityChoices)
         return [choice_dict.get(item, item) for item in self.availability]
+    
+    def __str__(self):
+        return str(self.id) + " - " + self.username
 
