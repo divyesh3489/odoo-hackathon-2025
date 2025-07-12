@@ -153,7 +153,10 @@ const Home = () => {
             {mockUsers.map((user) => (
               <UserCard
                 key={user.id}
-                user={user}
+                user={{
+                  ...user,
+                  username: `${user.firstName} ${user.lastName}`,
+                }}
                 onRequestSwap={handleRequestSwap}
               />
             ))}

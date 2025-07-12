@@ -13,10 +13,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/use-toast';
 
 const profileSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  location: z.string().optional(),
-  bio: z.string().optional(),
+  first_name: z.string().min(2, 'First name must be at least 2 characters'),
+  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
+  availability: z.array(z.string()).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -25,7 +24,7 @@ export const ProfileForm = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.profilePhoto || null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.profile_image || null);
   const [offeredSkills, setOfferedSkills] = useState<string[]>([
     'Web Development',
     'UI/UX Design',
@@ -36,13 +35,7 @@ export const ProfileForm = () => {
   ]);
   const [newOfferedSkill, setNewOfferedSkill] = useState('');
   const [newWantedSkill, setNewWantedSkill] = useState('');
-  const [availability, setAvailability] = useState({
-    weekdays: true,
-    weekends: false,
-    morning: true,
-    afternoon: false,
-    evening: true,
-  });
+  const [availability, setAvailability] = useState<string[]>(user?.availability || []);
 
   const {
     register,
@@ -51,10 +44,9 @@ export const ProfileForm = () => {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      location: user?.location || '',
-      bio: user?.bio || '',
+      first_name: user?.first_name || '',
+      last_name: user?.last_name || '',
+      availability: user?.availability || [],
     },
   });
 
@@ -90,6 +82,14 @@ export const ProfileForm = () => {
 
   const removeWantedSkill = (skill: string) => {
     setWantedSkills(wantedSkills.filter(s => s !== skill));
+  };
+
+  const toggleAvailability = (time: string) => {
+    setAvailability(prev => 
+      prev.includes(time) 
+        ? prev.filter(t => t !== time)
+        : [...prev, time]
+    );
   };
 
   const onSubmit = async (data: ProfileFormData) => {
@@ -163,22 +163,35 @@ export const ProfileForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <GlassInput
               label="First Name"
-              {...register('firstName')}
-              error={errors.firstName?.message}
+              {...register('first_name')}
+              error={errors.first_name?.message}
             />
             <GlassInput
               label="Last Name"
-              {...register('lastName')}
-              error={errors.lastName?.message}
+              {...register('last_name')}
+              error={errors.last_name?.message}
             />
           </div>
 
-          <GlassInput
-            label="Location"
-            placeholder="City, State"
-            {...register('location')}
-            error={errors.location?.message}
-          />
+          {/* Availability */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Availability
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {['Weekdays', 'Weekends', 'Evenings', 'Mornings', 'Afternoons', 'Nights'].map((time) => (
+                <label key={time} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={availability.includes(time)}
+                    onChange={() => toggleAvailability(time)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{time}</span>
+                </label>
+              ))}
+            </div>
+          </div>
 
           {/* Skills Offered */}
           <div>
@@ -261,29 +274,6 @@ export const ProfileForm = () => {
               className="w-full px-4 py-3 glass-input text-gray-700"
               placeholder="Tell others about yourself and your experience..."
             />
-          </div>
-
-          {/* Availability */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.entries(availability).map(([key, value]) => (
-                <label key={key} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setAvailability(prev => ({
-                      ...prev,
-                      [key]: e.target.checked
-                    }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">
-                    {key}
-                  </span>
-                </label>
-              ))}
-            </div>
           </div>
 
           {/* Action Buttons */}

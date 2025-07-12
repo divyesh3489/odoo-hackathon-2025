@@ -2,16 +2,17 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  location?: string;
-  bio?: string;
-  profilePhoto?: string;
-  rating: number;
-  completedSwaps: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  first_name: string;
+  last_name: string;
+  profile_image?: string;
+  availability: string[];
+  is_banned: boolean;
+  is_privete: boolean;
+  is_active: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  date_joined: string;
+  last_login?: string;
 }
 
 export interface Skill {

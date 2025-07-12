@@ -1,6 +1,6 @@
-import { getToken, removeToken } from './auth';
+import { getToken, removeToken, refreshAccessToken } from './auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://588085211e2e.ngrok-free.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -13,7 +13,7 @@ const apiRequest = async (
   endpoint: string,
   options: RequestInit = {}
 ): Promise<Response> => {
-  const token = getToken();
+  let token = getToken();
   
   const config: RequestInit = {
     ...options,
@@ -24,7 +24,25 @@ const apiRequest = async (
     },
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+
+  // If token is expired, try to refresh it
+  if (response.status === 401 && token) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      // Retry the request with the new token
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${newToken}`,
+      };
+      response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    } else {
+      // Refresh failed, remove tokens and redirect
+      removeToken();
+      window.location.href = '/';
+      throw new ApiError(401, 'Authentication required');
+    }
+  }
 
   if (response.status === 401) {
     removeToken();
@@ -36,7 +54,7 @@ const apiRequest = async (
     const errorData = await response.json().catch(() => ({}));
     throw new ApiError(
       response.status,
-      errorData.message || `HTTP error! status: ${response.status}`
+      errorData.message || errorData.detail || `HTTP error! status: ${response.status}`
     );
   }
 
@@ -84,47 +102,48 @@ export const api = {
 // Auth API calls - Updated for Django backend
 export const authApi = {
   login: async (credentials: { email: string; password: string }) => {
-    return api.post('/api/auth/login/', credentials);
+    return api.post('/api/v1/login/', credentials);
   },
 
   register: async (userData: any) => {
-    return api.post('/api/auth/register/', userData);
+    return api.post('/api/v1/register/', userData);
   },
 
   logout: async () => {
-    return api.post('/api/auth/logout/');
+    // Django JWT doesn't require a logout endpoint, we just remove the token
+    return Promise.resolve({ message: 'Logged out successfully' });
   },
 
   forgotPassword: async (email: string) => {
-    return api.post('/api/auth/forgot-password/', { email });
+    return api.post('/api/v1/forgot-password/', { email });
   },
 
   resetPassword: async (token: string, password: string) => {
-    return api.post('/api/auth/reset-password/', { token, password });
+    return api.post('/api/v1/reset-password/', { token, password });
   },
 
   refreshToken: async () => {
-    return api.post('/api/auth/refresh/');
+    return api.post('/api/v1/token/refresh/');
   },
 };
 
 // User API calls - Updated for Django backend
 export const userApi = {
   getProfile: async () => {
-    return api.get('/api/users/profile/');
+    return api.get('/api/v1/profile/');
   },
 
   updateProfile: async (data: any) => {
-    return api.put('/api/users/profile/', data);
+    return api.put('/api/v1/profile/', data);
   },
 
   getUsers: async (params?: any) => {
     const queryString = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return api.get(`/api/users/${queryString}`);
+    return api.get(`/api/v1/users/${queryString}`);
   },
 
   getUserById: async (id: number) => {
-    return api.get(`/api/users/${id}/`);
+    return api.get(`/api/v1/users/${id}/`);
   },
 
   uploadProfilePhoto: async (file: File) => {
@@ -132,8 +151,8 @@ export const userApi = {
     formData.append('profile_image', file);
     
     const token = getToken();
-    const response = await fetch(`${API_BASE_URL}/api/users/profile/photo/`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/api/v1/profile/`, {
+      method: 'PUT',
       headers: {
         ...(token && { Authorization: `Bearer ${token}` }),
       },

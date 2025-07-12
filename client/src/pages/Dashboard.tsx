@@ -82,7 +82,7 @@ const Dashboard = () => {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Welcome back, {user?.firstName}!
+            Welcome back, {user?.first_name}!
           </h1>
           <p className="text-gray-600">
             Here's what's happening with your skill swaps
