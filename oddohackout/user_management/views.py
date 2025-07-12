@@ -79,6 +79,10 @@ class GetUserListView(APIView):
         limit = int(request.GET.get('limit', 10))
         current_page = int(request.GET.get('current_page', 1))
         
+        # Get filter parameters
+        skills_filter = request.GET.get('skills', None)  # Skills to filter by
+        skill_type = request.GET.get('skill_type', 'all')  # 'want', 'offer', or 'all'
+        
         # Calculate offset
         offset = (current_page - 1) * limit
         
@@ -90,6 +94,28 @@ class GetUserListView(APIView):
             is_privete=False,
             is_active=True
         )
+        
+        # Apply skills filter if provided
+        if skills_filter:
+            skills_list = [skill.strip() for skill in skills_filter.split(',')]
+            
+            if skill_type == 'want':
+                # Filter users who have any of the specified want skills
+                active_users = active_users.filter(
+                    user_skills__skill__name__in=skills_list,
+                    user_skills__type='want'
+                ).distinct()
+            elif skill_type == 'offer':
+                # Filter users who have any of the specified offer skills
+                active_users = active_users.filter(
+                    user_skills__skill__name__in=skills_list,
+                    user_skills__type='offer'
+                ).distinct()
+            else:  # skill_type == 'all' or any other value
+                # Filter users who have any of the specified skills (either want or offer)
+                active_users = active_users.filter(
+                    user_skills__skill__name__in=skills_list
+                ).distinct()
         
         # Get total count for pagination info
         total_users = active_users.count()
@@ -130,6 +156,10 @@ class GetUserListView(APIView):
                 'limit': limit,
                 'has_next': has_next,
                 'has_previous': has_previous
+            },
+            'filters': {
+                'skills': skills_filter,
+                'skill_type': skill_type
             }
         }
 
