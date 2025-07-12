@@ -1,13 +1,15 @@
 from django.shortcuts import render
-from skills.models import Skills, UserSkills
-from skills.serializers import SkillsSerializer, UserSkillsSerializer
+from skills.models import Skills, UserSkills, SkillRequest
+from skills.serializers import SkillsSerializer, UserSkillsSerializer,SkillRequestSerializer
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from user_management.models import Users
-from utils.constatnt import SkillTypeConstants
+from utils.constatnt import SkillTypeConstants,StatusConstants
 from utils.paginator import CustomPagination
+from django.db.models import Q
+from rest_framework.views import APIView
 # Create your views here.
 
 class SkillsViewSet(viewsets.ModelViewSet):
@@ -170,3 +172,101 @@ class UserSkillsViewSet(viewsets.ModelViewSet):
                 'total_processed': len(cleaned_skills)
             }
         }, status=status.HTTP_201_CREATED)
+    
+class SkillRequestViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing skill requests
+    """
+    queryset = SkillRequest.objects.all()
+    serializer_class = SkillRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filter skill requests by current user
+        """
+        user = self.request.user
+        return SkillRequest.objects.filter(receiver=user
+        ).order_by('-created_at')
+    
+    def list(self, request, *args, **kwargs):
+        """
+        List skill requests for the current user
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        Create a skill request
+        Expected format: {
+            "receiver": 2,
+            "wanted_skill": "python",
+            "offered_skill": "JavaScript"
+        }
+        """
+        serializer = self.get_serializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Skill request created successfully',
+                'data': serializer.data
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Update a skill request
+        Expected format: {
+            "status": "approved" or "rejected"
+        }
+        """
+        request_id = kwargs.get('pk')
+        try:
+            skill_request = SkillRequest.objects.get(id=request_id)
+        except SkillRequest.DoesNotExist:
+            return Response({'error': 'Skill request not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data.copy()
+        if data.get('status'):
+            # Validate status
+            if data['status'] not in [StatusConstants.APPROVED, StatusConstants.REJECTED]:
+                return Response({
+                    'error': f'Status must be one of: {StatusConstants.APPROVED}, {StatusConstants.REJECTED}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            skill_request.satatus = data['status']
+            skill_request.save()
+        return Response({
+            'message': 'Skill request updated successfully',
+            'data': {
+                'id': skill_request.id,
+                'status': skill_request.satatus
+            }
+        }, status=status.HTTP_200_OK)
+
+class SkillSenderView(APIView):
+    """
+    Custom view to get sender information for skill requests
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Get sender information for a skill request
+        """
+        try:
+            skill_requests = SkillRequest.objects.filter(sender=request.user)
+            data = []
+            for skill_request in skill_requests:
+                data.append({
+                    "id": skill_request.id,
+                    'receiver_username': skill_request.receiver.username,
+                    'receiver_email': skill_request.receiver.email,
+                    'wanted_skill': skill_request.wanted_skill.name,
+                    'offered_skill': skill_request.offered_skill.name,
+                    'status': skill_request.get_satatus_display(),
+                })
+                
+            return Response(data, status=status.HTTP_200_OK)
+        except SkillRequest.DoesNotExist:
+            return Response({'error': 'Skill request not found'}, status=status.HTTP_404_NOT_FOUND)

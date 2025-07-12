@@ -7,4 +7,5 @@ urlpatterns = [
     path("", include("user_management.urls", namespace="user_management")),
     path("", include("skills.urls", namespace="skills")),
     path("ratings/", include("ratings.urls", namespace="ratings")),
+    # path("", include("request.urls", namespace="user-request")),
 ]
