@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,23 +9,24 @@ import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { SkillTag } from '../common/SkillTag';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { useToast } from '../../hooks/use-toast';
+import { userApi } from '../../utils/api';
 
 const profileSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  location: z.string().optional(),
-  bio: z.string().optional(),
+  first_name: z.string().min(2, 'First name must be at least 2 characters'),
+  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
+  availability: z.array(z.string()).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const ProfileForm = () => {
-  const { user } = useAuth();
+  const { user, loadUser } = useAuthStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(user?.profilePhoto || null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
   const [offeredSkills, setOfferedSkills] = useState<string[]>([
     'Web Development',
     'UI/UX Design',
@@ -36,32 +37,65 @@ export const ProfileForm = () => {
   ]);
   const [newOfferedSkill, setNewOfferedSkill] = useState('');
   const [newWantedSkill, setNewWantedSkill] = useState('');
-  const [availability, setAvailability] = useState({
-    weekdays: true,
-    weekends: false,
-    morning: true,
-    afternoon: false,
-    evening: true,
-  });
+  const [availability, setAvailability] = useState<string[]>([]);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      location: user?.location || '',
-      bio: user?.bio || '',
+      first_name: '',
+      last_name: '',
+      availability: [],
     },
   });
+
+  // Update form and state when user data changes
+  useEffect(() => {
+    if (user) {
+  
+      reset({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        availability: user.availability || [],
+      });
+      
+      // Update local state
+      setProfilePhoto(user.profile_image || null);
+      setAvailability(user.availability || []);
+    } else {
+      console.log('ProfileForm: No user data available');
+    }
+  }, [user, reset]);
+
+  // Show loading spinner if user data is not yet loaded
+  if (!user) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <GlassCard className="p-8">
+          <div className="flex items-center justify-center py-8">
+            <LoadingSpinner size="lg" />
+            <span className="ml-3 text-gray-600">Loading profile...</span>
+          </div>
+        </GlassCard>
+      </motion.div>
+    );
+  }
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you'd upload this to your server
+      // Store the file for API upload
+      setProfilePhotoFile(file);
+      
+      // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfilePhoto(e.target?.result as string);
@@ -92,20 +126,49 @@ export const ProfileForm = () => {
     setWantedSkills(wantedSkills.filter(s => s !== skill));
   };
 
+  const toggleAvailability = (time: string) => {
+    setAvailability(prev => 
+      prev.includes(time) 
+        ? prev.filter(t => t !== time)
+        : [...prev, time]
+    );
+  };
+
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      // In a real app, you'd make an API call here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // Prepare profile data
+      const profileData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        availability: availability,
+        // Add other fields as needed
+      };
+
+      let response;
+
+      // If there's a new profile photo, upload it
+      if (profilePhotoFile) {
+        response = await userApi.uploadProfilePhoto(profilePhotoFile);
+      } else {
+        response = await userApi.updateProfile(profileData);
+      }
+
+      // Reload user data to get updated profile
+      await loadUser();
+
       toast({
         title: "Profile updated!",
         description: "Your changes have been saved successfully.",
       });
-    } catch (error) {
+
+      // Reset photo file state
+      setProfilePhotoFile(null);
+
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -163,22 +226,35 @@ export const ProfileForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <GlassInput
               label="First Name"
-              {...register('firstName')}
-              error={errors.firstName?.message}
+              {...register('first_name')}
+              error={errors.first_name?.message}
             />
             <GlassInput
               label="Last Name"
-              {...register('lastName')}
-              error={errors.lastName?.message}
+              {...register('last_name')}
+              error={errors.last_name?.message}
             />
           </div>
 
-          <GlassInput
-            label="Location"
-            placeholder="City, State"
-            {...register('location')}
-            error={errors.location?.message}
-          />
+          {/* Availability */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Availability
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {['weekdays', 'weekends', 'evenings', 'mornings', 'afternoons', 'nights' , 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((time) => (
+                <label key={time} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={availability.includes(time)}
+                    onChange={() => toggleAvailability(time)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{time}</span>
+                </label>
+              ))}
+            </div>
+          </div>
 
           {/* Skills Offered */}
           <div>
@@ -252,39 +328,8 @@ export const ProfileForm = () => {
             </div>
           </div>
 
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-            <textarea
-              {...register('bio')}
-              rows={4}
-              className="w-full px-4 py-3 glass-input text-gray-700"
-              placeholder="Tell others about yourself and your experience..."
-            />
-          </div>
-
-          {/* Availability */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.entries(availability).map(([key, value]) => (
-                <label key={key} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setAvailability(prev => ({
-                      ...prev,
-                      [key]: e.target.checked
-                    }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">
-                    {key}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
+        
+         
 
           {/* Action Buttons */}
           <div className="flex space-x-4 pt-6">

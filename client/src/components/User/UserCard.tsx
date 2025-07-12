@@ -24,10 +24,10 @@ export const UserCard = ({ user, onRequestSwap, className = '' }: UserCardProps)
         <Link href={`/user/${user.id}`}>
           <div className="flex items-center space-x-4 mb-4">
             <div className="relative">
-              {user.profilePhoto ? (
+              {user.profile_image ? (
                 <img
-                  src={user.profilePhoto}
-                  alt={`${user.firstName} ${user.lastName}`}
+                  src={user.profile_image}
+                  alt={`${user.first_name} ${user.last_name}`}
                   className="w-16 h-16 rounded-full object-cover border-2 border-white/50"
                 />
               ) : (
@@ -38,18 +38,15 @@ export const UserCard = ({ user, onRequestSwap, className = '' }: UserCardProps)
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-gray-800 hover:text-blue-600 transition-colors">
-                {user.firstName} {user.lastName}
+                {user.first_name} {user.last_name}
               </h4>
-              {user.location && (
-                <div className="flex items-center space-x-1 text-sm text-gray-600">
-                  <MapPin className="w-3 h-3" />
-                  <span>{user.location}</span>
-                </div>
-              )}
+              <div className="flex items-center space-x-1 text-sm text-gray-600">
+                <span>@{user.username}</span>
+              </div>
               <div className="flex items-center space-x-1 mt-1">
                 <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                <span className="text-sm text-gray-700">{user.rating}</span>
-                <span className="text-xs text-gray-500">• {user.completedSwaps} swaps</span>
+                <span className="text-sm text-gray-700">4.5</span>
+                <span className="text-xs text-gray-500">• 0 swaps</span>
               </div>
             </div>
           </div>

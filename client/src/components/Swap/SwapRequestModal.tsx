@@ -9,6 +9,7 @@ import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../hooks/use-toast';
+import { swapApi } from '../../utils/api';
 
 const swapRequestSchema = z.object({
   offeredSkill: z.string().min(1, 'Please select a skill you can offer'),
@@ -28,7 +29,6 @@ interface SwapRequestModalProps {
 }
 
 export const SwapRequestModal = ({ isOpen, onClose, targetUserId }: SwapRequestModalProps) => {
-  const { createSwapRequest } = useApp();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,7 +44,7 @@ export const SwapRequestModal = ({ isOpen, onClose, targetUserId }: SwapRequestM
   const onSubmit = async (data: SwapRequestFormData) => {
     setIsLoading(true);
     try {
-      await createSwapRequest({
+      await swapApi.createSwapRequest({
         toUserId: targetUserId,
         ...data,
       });
@@ -155,7 +155,17 @@ export const SwapRequestModal = ({ isOpen, onClose, targetUserId }: SwapRequestM
                 <option value="">Select day</option>
                 <option value="weekdays">Weekdays</option>
                 <option value="weekends">Weekends</option>
-                <option value="flexible">Flexible</option>
+                <option value="evenings">Evenings</option>
+                <option value="mornings">Mornings</option>
+                <option value="afternoons">Afternoons</option>
+                <option value="nights">Nights</option>
+                <option value="monday">Monday</option>
+                <option value="tuesday">Tuesday</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="thursday">Thursday</option>
+                <option value="friday">Friday</option>
+                <option value="saturday">Saturday</option>
+                <option value="sunday">Sunday</option>
               </select>
               <select
                 {...register('preferredTime')}

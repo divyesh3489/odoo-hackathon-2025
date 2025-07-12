@@ -41,11 +41,10 @@ const UserDetail = () => {
       id: parseInt(id),
       username: 'emilyr',
       email: 'emily.rodriguez@example.com',
-      firstName: 'Emily',
-      lastName: 'Rodriguez',
+      first_name: 'Emily',
+      last_name: 'Rodriguez',
       location: 'Austin, TX',
-      bio: 'Creative designer with 8+ years of experience in graphic design, photography, and digital art. I love sharing my knowledge and learning new skills from others. Currently exploring web development and looking to trade my design expertise for programming skills.',
-      profilePhoto: '',
+      profile_image: '',
       rating: 4.9,
       completedSwaps: 18,
       isActive: true,
@@ -181,16 +180,16 @@ const UserDetail = () => {
               <GlassCard className="p-8">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
                   <div className="relative">
-                    {user.profilePhoto ? (
+                    {user.profile_image ? (
                       <img
-                        src={user.profilePhoto}
-                        alt={`${user.firstName} ${user.lastName}`}
+                        src={user.profile_image}
+                        alt={`${user.first_name} ${user.last_name}`}
                         className="w-32 h-32 rounded-full object-cover border-4 border-white/30 shadow-lg"
                       />
                     ) : (
                       <div className="w-32 h-32 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center border-4 border-white/30 shadow-lg">
                         <span className="text-4xl font-bold text-white">
-                          {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                          {user.first_name.charAt(0)}{user.last_name.charAt(0)}
                         </span>
                       </div>
                     )}
@@ -201,7 +200,7 @@ const UserDetail = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
                       <div>
                         <h1 className="text-3xl font-bold text-gray-800 mb-1">
-                          {user.firstName} {user.lastName}
+                          {user.first_name} {user.last_name}
                         </h1>
                         <div className="flex items-center justify-center sm:justify-start space-x-4 text-gray-600">
                           <div className="flex items-center space-x-1">
@@ -254,17 +253,7 @@ const UserDetail = () => {
               </GlassCard>
             </motion.div>
 
-            {/* About */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <GlassCard className="p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">About</h2>
-                <p className="text-gray-600 leading-relaxed">{user.bio}</p>
-              </GlassCard>
-            </motion.div>
+            
 
             {/* Skills */}
             <motion.div

@@ -2,29 +2,38 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { Zap, Menu, X, Bell, User, Settings, LogOut } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { GlassButton } from '../common/GlassButton';
 import { useApp } from '../../contexts/AppContext';
 import { LoginModal } from '../Auth/LoginModal';
 import { RegisterModal } from '../Auth/RegisterModal';
 import { ForgotPasswordModal } from '../Auth/ForgotPasswordModal';
+import { Portal } from "../common/Portal"; // adjust path as needed
+import { useMemo } from 'react';
 
 export const Navigation = () => {
   const [location] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
-  const { notifications } = useApp();
+  const [activeModal, setActiveModal] = useState<'login' | 'register' | 'forgot-password' | null>(null);
+  const { isAuthenticated, user, logout } = useAuthStore();
+  const notifications = (useApp() as any).notifications || [];
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  console.log('NAV isAuthenticated:', isAuthenticated, 'user:', user);
 
   const handleLogout = async () => {
     await logout();
     setIsProfileOpen(false);
   };
+
+  const initials = useMemo(() => {
+    if (user?.first_name && user?.last_name) {
+      return user.first_name[0].toUpperCase() + user.last_name[0].toUpperCase();
+    }
+    if (user?.first_name) return user.first_name[0].toUpperCase();
+    return '';
+  }, [user]);
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/10 backdrop-blur-md border-b border-white/20">
@@ -87,23 +96,23 @@ export const Navigation = () => {
                 <div className="relative">
                   <motion.button
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-white/20 transition-colors"
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-white/20 transition-colors border border-blue-200 bg-white/70 shadow-sm"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {user?.profilePhoto ? (
+                    {user?.profile_image ? (
                       <img
-                        src={user.profilePhoto}
-                        alt={user.firstName}
-                        className="w-8 h-8 rounded-full object-cover"
+                        src={user.profile_image}
+                        alt={user.first_name}
+                        className="w-8 h-8 rounded-full object-cover border border-blue-400"
                       />
                     ) : (
-                      <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg border border-blue-400">
+                        {initials || <User className="w-4 h-4" />}
                       </div>
                     )}
                     <span className="text-gray-700 font-medium hidden sm:block">
-                      {user?.firstName}
+                      {user?.first_name}
                     </span>
                   </motion.button>
 
@@ -112,29 +121,29 @@ export const Navigation = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute right-0 mt-2 w-48 bg-white/25 backdrop-blur-lg border border-white/30 rounded-xl shadow-xl py-2"
+                      className="absolute right-0 mt-2 w-56 bg-white/95 border border-blue-200 rounded-xl shadow-xl py-2 z-50"
                     >
-                      <Link href="/dashboard">
-                        <a className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-white/20 transition-colors">
-                          <User className="w-4 h-4" />
-                          <span>Dashboard</span>
-                        </a>
-                      </Link>
                       <Link href="/profile">
-                        <a className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-white/20 transition-colors">
-                          <Settings className="w-4 h-4" />
+                        <a className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors">
+                          <User className="w-4 h-4" />
                           <span>Profile</span>
                         </a>
                       </Link>
+                      <Link href="/dashboard">
+                        <a className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors">
+                          <Settings className="w-4 h-4" />
+                          <span>Dashboard</span>
+                        </a>
+                      </Link>
                       <Link href="/settings">
-                        <a className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-white/20 transition-colors">
+                        <a className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors">
                           <Settings className="w-4 h-4" />
                           <span>Settings</span>
                         </a>
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-white/20 transition-colors w-full text-left"
+                        className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-blue-50 transition-colors w-full text-left border-t border-blue-100 mt-2"
                       >
                         <LogOut className="w-4 h-4" />
                         <span>Sign Out</span>
@@ -146,13 +155,13 @@ export const Navigation = () => {
             ) : (
               <>
                 <GlassButton
-                  onClick={() => setIsLoginOpen(true)}
+                  onClick={() => setActiveModal('login')}
                   className="text-gray-700 hover:text-blue-600"
                 >
                   Sign In
                 </GlassButton>
                 <GlassButton
-                  onClick={() => setIsRegisterOpen(true)}
+                  onClick={() => setActiveModal('register')}
                   variant="primary"
                   className="hover-lift"
                 >
@@ -205,36 +214,24 @@ export const Navigation = () => {
       </div>
 
       {/* Auth Modals */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSwitchToRegister={() => {
-          setIsLoginOpen(false);
-          setIsRegisterOpen(true);
-        }}
-        onSwitchToForgotPassword={() => {
-          setIsLoginOpen(false);
-          setIsForgotPasswordOpen(true);
-        }}
-      />
-
-      <RegisterModal
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onSwitchToLogin={() => {
-          setIsRegisterOpen(false);
-          setIsLoginOpen(true);
-        }}
-      />
-
-      <ForgotPasswordModal
-        isOpen={isForgotPasswordOpen}
-        onClose={() => setIsForgotPasswordOpen(false)}
-        onSwitchToLogin={() => {
-          setIsForgotPasswordOpen(false);
-          setIsLoginOpen(true);
-        }}
-      />
+      <Portal>
+        <LoginModal
+          isOpen={activeModal === 'login'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToRegister={() => setActiveModal('register')}
+          onSwitchToForgotPassword={() => setActiveModal('forgot-password')}
+        />
+        <RegisterModal
+          isOpen={activeModal === 'register'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToLogin={() => setActiveModal('login')}
+        />
+        <ForgotPasswordModal
+          isOpen={activeModal === 'forgot-password'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToLogin={() => setActiveModal('login')}
+        />
+      </Portal>
     </nav>
   );
 };

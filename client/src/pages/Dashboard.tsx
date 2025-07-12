@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { useApp } from '../contexts/AppContext';
 import { StatsCard } from '../components/Dashboard/StatsCard';
 import { ActivityCard } from '../components/Dashboard/ActivityCard';
 import { GlassCard } from '../components/common/GlassCard';
@@ -11,18 +10,7 @@ import { useLocation } from 'wouter';
 
 const Dashboard = () => {
   const { isAuthenticated, user } = useAuth();
-  const { fetchNotifications, fetchSwapRequests } = useApp();
   const [, navigate] = useLocation();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/');
-      return;
-    }
-
-    fetchNotifications();
-    fetchSwapRequests();
-  }, [isAuthenticated, navigate, fetchNotifications, fetchSwapRequests]);
 
   if (!isAuthenticated) {
     return null;
@@ -82,7 +70,7 @@ const Dashboard = () => {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            Welcome back, {user?.firstName}!
+            Welcome back, {user?.first_name}!
           </h1>
           <p className="text-gray-600">
             Here's what's happening with your skill swaps
