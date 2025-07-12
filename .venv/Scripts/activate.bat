@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=F:\oddo Hackout\Odoo-Hackathon-2025--dev\.venv
+set VIRTUAL_ENV=D:\oddo hackout\odoo-hackathon-2025\.venv
 
 if not defined PROMPT set PROMPT=$P$G
 

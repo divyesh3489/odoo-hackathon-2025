@@ -11,6 +11,7 @@
 
 # 1. Open terminal and navigate to the project directory
 # 2. start venv using the command: venv\Scripts\activate
+# 4.
 # 3. Run the server using the command: python manage.py runserver 0.0.0.0:8000
 
 

@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="F:\oddo Hackout\Odoo-Hackathon-2025--dev\.venv"
+VIRTUAL_ENV="D:\oddo hackout\odoo-hackathon-2025\.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
