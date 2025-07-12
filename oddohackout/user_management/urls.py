@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from user_management.views import  CustomTokenObtainPairView, UserCreateView, UserDetailUpdateView, GetUserListView
+from user_management.views import  CustomTokenObtainPairView, UserCreateView, UserDetailUpdateView, GetUserListView,GetUserByIdView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 app_name = "user_management"
@@ -12,4 +12,5 @@ urlpatterns = [
     path("profile/", UserDetailUpdateView.as_view(), name="profile"),
     path("token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
     path("users/", GetUserListView.as_view(), name="user_list"),
+    path("users/<int:pk>/", GetUserByIdView.as_view(), name="user_detail_update"),
 ]

@@ -53,6 +53,7 @@ class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
             average_rating=Avg('rating_count'),
             total_ratings=Count('id')
         )
+
         
         data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
         data['total_ratings'] = ratings_stats['total_ratings']
@@ -74,12 +75,40 @@ class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
 
 class GetUserListView(APIView):
     def get(self, request, *args, **kwargs):
-        
         user_list = []
         User = get_user_model()
         for user in User.objects.all():
             if user.is_banned or user.is_privete or not user.is_active:
                 continue
+            user_data = UserSerializer(user).data
+            want_skills = UserSkills.objects.filter(user=user, type='want')
+            offer_skills = UserSkills.objects.filter(user=user, type='offer')
+            user_data['want_skills'] = UserSkillsSerializer(want_skills, many=True).data
+            user_data['offer_skills'] = UserSkillsSerializer(offer_skills, many=True).data
+            ratings_stats = Rating.objects.filter(receiver=user).aggregate(
+                average_rating=Avg('rating_count'),
+                total_ratings=Count('id')
+            )
+            user_data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
+            user_data['total_ratings'] = ratings_stats['total_ratings']
+            # Get user's rating statistics
+            ratings_stats = Rating.objects.filter(receiver=user).aggregate(
+                average_rating=Avg('rating_count'),
+                total_ratings=Count('id')
+            )
+            
+            user_data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
+            user_data['total_ratings'] = ratings_stats['total_ratings']
+            
+            user_list.append(user_data)
+
+        return Response(user_list, status=status.HTTP_200_OK)
+class GetUserByIdView(APIView):
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            user = get_user_model().objects.get(id=pk)
+            if not user or user.is_banned or user.is_privete or not user.is_active:
+                return Response({"error": "User not found or is inactive"}, status=status.HTTP_404_NOT_FOUND)
             user_data = UserSerializer(user).data
             want_skills = UserSkills.objects.filter(user=user, type='want')
             offer_skills = UserSkills.objects.filter(user=user, type='offer')
@@ -95,6 +124,6 @@ class GetUserListView(APIView):
             user_data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
             user_data['total_ratings'] = ratings_stats['total_ratings']
             
-            user_list.append(user_data)
-
-        return Response(user_list, status=status.HTTP_200_OK)
+            return Response(user_data, status=status.HTTP_200_OK)
+        except get_user_model().DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
