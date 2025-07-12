@@ -58,6 +58,8 @@ class GetUserListView(APIView):
         user_list = []
         User = get_user_model()
         for user in User.objects.all():
+            if user.is_banned or user.is_privete or not user.is_active:
+                continue
             user_data = UserSerializer(user).data
             want_skills = UserSkills.objects.filter(user=user, type='want')
             offer_skills = UserSkills.objects.filter(user=user, type='offer')
