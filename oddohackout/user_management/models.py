@@ -62,8 +62,9 @@ class Users(AbstractUser,PermissionsMixin):
     first_name = models.CharField(max_length=30, blank=True, null=True)
     last_name = models.CharField(max_length=30, blank=True, null=True)
     profile_image = models.ImageField(upload_to='user_profiles/', blank=True, null=True,default='user_profiles/default_profile.png')
-    
     availability = models.JSONField(default=list, blank=True, help_text="Select multiple availability options")
+    is_banned = models.BooleanField(default=False, help_text="Indicates if the user is banned from the platform")
+    is_privete =  models.BooleanField(default=False, help_text="Indicates if the user profile is private")
     objects = CustomUserManager()
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
