@@ -7,7 +7,9 @@ from user_management.serializers import CustomTokenObtainPairSerializer,UserSeri
 from rest_framework_simplejwt.views import TokenObtainPairView
 from skills.serializers import UserSkillsSerializer
 from skills.models import UserSkills
+from ratings.models import Rating
 from django.contrib.auth import get_user_model
+from django.db.models import Avg, Count
 
 
 # Create your views here.
@@ -37,6 +39,15 @@ class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
         data['want_skills'] = want_skills_serializer.data
         data['offer_skills'] = offer_skills_serializer.data
         
+        # Get user's rating statistics
+        ratings_stats = Rating.objects.filter(receiver=user).aggregate(
+            average_rating=Avg('rating_count'),
+            total_ratings=Count('id')
+        )
+        
+        data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
+        data['total_ratings'] = ratings_stats['total_ratings']
+        
         return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, *args, **kwargs):
@@ -65,6 +76,16 @@ class GetUserListView(APIView):
             offer_skills = UserSkills.objects.filter(user=user, type='offer')
             user_data['want_skills'] = UserSkillsSerializer(want_skills, many=True).data
             user_data['offer_skills'] = UserSkillsSerializer(offer_skills, many=True).data
+            
+            # Get user's rating statistics
+            ratings_stats = Rating.objects.filter(receiver=user).aggregate(
+                average_rating=Avg('rating_count'),
+                total_ratings=Count('id')
+            )
+            
+            user_data['average_rating'] = round(ratings_stats['average_rating'], 2) if ratings_stats['average_rating'] else 0
+            user_data['total_ratings'] = ratings_stats['total_ratings']
+            
             user_list.append(user_data)
 
         return Response(user_list, status=status.HTTP_200_OK)

@@ -54,7 +54,7 @@ THIRD_PARTY_APPS = [
 
 USER_APP = [
     "user_management",  
-    "skills"
+    "skills",
     "ratings",
 ]
 
@@ -101,7 +101,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "Hackout",
         "USER": "postgres", 
-        "PASSWORD": "password",
+        "PASSWORD": "Admin@123",
         "HOST": "localhost",
         "PORT": "5432",
     }
