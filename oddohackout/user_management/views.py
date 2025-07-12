@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from skills.serializers import UserSkillsSerializer
 from skills.models import UserSkills
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 # Create your views here.
@@ -17,6 +18,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class UserCreateView(CreateAPIView):
     serializer_class = UserSerializer
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        user = self.serializer_class.Meta.model.objects.get(pk=response.data['id'])
+        refresh = RefreshToken.for_user(user)
+        response.data['refresh_token'] = str(refresh)
+        response.data['access_token'] = str(refresh.access_token)
+        return response
 
 
 class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
