@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User, AuthState } from '../types';
-import { authApi } from '../utils/api';
+import { authApi, userApi } from '../utils/api';
 import { setToken, removeToken, setUser, getUser, getToken } from '../utils/auth';
 
 interface AuthStore extends AuthState {
@@ -22,9 +22,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authApi.login(credentials);
-      const { user, token } = response;
+      const { access_token, refresh_token } = response;
       
-      setToken(token);
+      // Store both tokens
+      setToken(access_token, refresh_token);
+      
+      // Fetch user profile
+      const user = await userApi.getProfile();
       setUser(user);
       
       set({
@@ -48,9 +52,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authApi.register(userData);
-      const { user, token } = response;
+      const { access_token, refresh_token } = response;
       
-      setToken(token);
+      // Store both tokens
+      setToken(access_token, refresh_token);
+      
+      // Fetch user profile
+      const user = await userApi.getProfile();
       setUser(user);
       
       set({
@@ -101,17 +109,29 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  loadUser: () => {
+  loadUser: async () => {
     const token = getToken();
-    const user = getUser();
     
-    if (token && user) {
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
+    if (token) {
+      try {
+        const user = await userApi.getProfile();
+        setUser(user);
+        set({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (error) {
+        // Token might be invalid, clear it
+        removeToken();
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      }
     } else {
       set({
         user: null,

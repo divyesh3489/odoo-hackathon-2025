@@ -91,10 +91,10 @@ export const Navigation = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {user?.profilePhoto ? (
+                    {user?.profile_image ? (
                       <img
-                        src={user.profilePhoto}
-                        alt={user.firstName}
+                        src={user.profile_image}
+                        alt={user.first_name}
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
@@ -103,7 +103,7 @@ export const Navigation = () => {
                       </div>
                     )}
                     <span className="text-gray-700 font-medium hidden sm:block">
-                      {user?.firstName}
+                      {user?.first_name}
                     </span>
                   </motion.button>
 
