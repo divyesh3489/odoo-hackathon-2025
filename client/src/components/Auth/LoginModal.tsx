@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useToast } from '../../hooks/use-toast';
+import { useLocation } from 'wouter';
+import { getToken, getRefreshToken } from '../../utils/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -31,8 +33,9 @@ export const LoginModal = ({
   onSwitchToForgotPassword 
 }: LoginModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading, error: errorStore } = useAuthStore();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const {
     register,
@@ -52,10 +55,14 @@ export const LoginModal = ({
       });
       onClose();
       reset();
+      // Log tokens for debugging
+      console.log('Access Token:', getToken());
+      console.log('Refresh Token:', getRefreshToken());
+      navigate('/');
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorStore || (error instanceof Error ? error.message : "An error occurred"),
         variant: "destructive",
       });
     }
@@ -66,15 +73,28 @@ export const LoginModal = ({
     onClose();
   };
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white/25 backdrop-blur-lg border border-white/30 rounded-2xl p-8 w-full max-w-md shadow-2xl"
+        className="bg-white backdrop-blur-lg border border-white/30 rounded-2xl p-8 w-full max-w-md shadow-2xl"
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-800">Welcome Back</h3>
@@ -129,9 +149,9 @@ export const LoginModal = ({
             </button>
           </div>
 
-          {error && (
+          {errorStore && (
             <div className="text-red-600 text-sm bg-red-50/50 p-3 rounded-lg">
-              {error}
+              {errorStore}
             </div>
           )}
 

@@ -7,14 +7,7 @@ import { useLocation } from 'wouter';
 const Profile = () => {
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/');
-      return;
-    }
-  }, [isAuthenticated, navigate]);
-
+  
   if (!isAuthenticated) {
     return null;
   }

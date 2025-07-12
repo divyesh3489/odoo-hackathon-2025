@@ -1,58 +1,54 @@
-import { createContext, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { userApi } from '../utils/api';
+import { getToken, setUser } from '../utils/auth';
 import { User } from '../types';
 
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
-  register: (userData: any) => Promise<void>;
-  logout: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
-  clearError: () => void;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<ReturnType<typeof useAuthStore> | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    login,
-    register,
-    logout,
-    forgotPassword,
-    loadUser,
-    clearError,
-  } = useAuthStore();
+  const authStore = useAuthStore();
 
   useEffect(() => {
-    loadUser();
-  }, [loadUser]);
-
-  const value = {
-    user,
-    isAuthenticated,
-    isLoading,
-    error,
-    login,
-    register,
-    logout,
-    forgotPassword,
-    clearError,
-  };
+    // Initialize auth state on app load - only run once on mount
+    const initAuth = async () => {
+      const token = getToken();
+      
+      if (token) {
+        try {
+          const userProfile = await userApi.getProfile();
+          
+          if (userProfile && typeof userProfile === 'object') {
+            const user = userProfile as User;
+            setUser(user);
+          }
+        } catch (error) {
+          console.error('AuthProvider: Profile API error:', error);
+        }
+      }
+      
+      // Also call the store's loadUser method
+      await authStore.loadUser();
+    };
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intentionally empty - we only want this to run once on mount
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={authStore}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

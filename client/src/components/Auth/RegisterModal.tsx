@@ -1,22 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useToast } from '../../hooks/use-toast';
+import { useLocation } from 'wouter';
+import { getToken, getRefreshToken } from '../../utils/auth';
+
+// Separate validation schemas for different validation steps
+const basicFieldsSchema = z.object({
+  first_name: z.string().min(2, 'First name must be at least 2 characters'),
+  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
+  email: z.string().email('Invalid email address'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+});
+
+const passwordSchema = z.object({
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
+const termsSchema = z.object({
+  terms: z.boolean().refine(val => val === true, 'You must accept the terms and conditions'),
+});
 
 const registerSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  first_name: z.string().min(2, 'First name must be at least 2 characters'),
+  last_name: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-  location: z.string().optional(),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  availability: z.array(z.string()).optional(),
   terms: z.boolean().refine(val => val === true, 'You must accept the terms and conditions'),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -34,19 +57,63 @@ interface RegisterModalProps {
 export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register: authRegister, isLoading, error } = useAuth();
+  const { register: authRegister, isLoading, error: errorStore } = useAuthStore();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setError,
+    clearErrors,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    mode: 'onChange',
   });
 
+  // Watch form values for real-time validation
+  const watchedValues = watch();
+
+  // Custom validation function that validates in order
+  const validateInOrder = (data: RegisterFormData) => {
+    clearErrors();
+
+    // Step 1: Validate basic fields
+    const basicResult = basicFieldsSchema.safeParse(data);
+    if (!basicResult.success) {
+      const firstError = basicResult.error.errors[0];
+      setError(firstError.path[0] as any, { message: firstError.message });
+      return false;
+    }
+
+    // Step 2: Validate passwords
+    const passwordResult = passwordSchema.safeParse(data);
+    if (!passwordResult.success) {
+      const firstError = passwordResult.error.errors[0];
+      setError(firstError.path[0] as any, { message: firstError.message });
+      return false;
+    }
+
+    // Step 3: Validate terms
+    const termsResult = termsSchema.safeParse(data);
+    if (!termsResult.success) {
+      const firstError = termsResult.error.errors[0];
+      setError(firstError.path[0] as any, { message: firstError.message });
+      return false;
+    }
+
+    return true;
+  };
+
   const onSubmit = async (data: RegisterFormData) => {
+    // Validate in order before submitting
+    if (!validateInOrder(data)) {
+      return;
+    }
+
     try {
       const { confirmPassword, terms, ...userData } = data;
       await authRegister(userData);
@@ -56,10 +123,14 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
       });
       onClose();
       reset();
+      // Log tokens for debugging
+      console.log('Access Token:', getToken());
+      console.log('Refresh Token:', getRefreshToken());
+      navigate('/');
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorStore || (error instanceof Error ? error.message : "An error occurred"),
         variant: "destructive",
       });
     }
@@ -70,15 +141,28 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
     onClose();
   };
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white/25 backdrop-blur-lg border border-white/30 rounded-2xl p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white backdrop-blur-lg border border-white/30 rounded-2xl p-8 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-2xl font-bold text-gray-800">Join SkillSwap</h3>
@@ -95,16 +179,23 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
             <GlassInput
               label="First Name"
               placeholder="John"
-              {...register('firstName')}
-              error={errors.firstName?.message}
+              {...register('first_name')}
+              error={errors.first_name?.message}
             />
             <GlassInput
               label="Last Name"
               placeholder="Doe"
-              {...register('lastName')}
-              error={errors.lastName?.message}
+              {...register('last_name')}
+              error={errors.last_name?.message}
             />
           </div>
+
+          <GlassInput
+            label="Username (nickname)"
+            placeholder="johndoe"
+            {...register('username')}
+            error={errors.username?.message}
+          />
 
           <GlassInput
             label="Email"
@@ -148,12 +239,24 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
             </button>
           </div>
 
-          <GlassInput
-            label="Location (Optional)"
-            placeholder="City, State"
-            {...register('location')}
-            error={errors.location?.message}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Availability (Optional)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {['weekdays', 'weekends', 'evenings', 'mornings', 'afternoons', 'nights' , 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((time) => (
+                <label key={time} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    value={time}
+                    {...register('availability')}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{time}</span>
+                </label>
+              ))}
+            </div>
+          </div>
 
           <div>
             <label className="flex items-start space-x-2">
@@ -171,9 +274,9 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
             )}
           </div>
 
-          {error && (
+          {errorStore && (
             <div className="text-red-600 text-sm bg-red-50/50 p-3 rounded-lg">
-              {error}
+              {errorStore}
             </div>
           )}
 
