@@ -24,25 +24,37 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const response: any = await authApi.login(credentials);
       const access_token = response.access_token || response.data?.access_token;
       const refresh_token = response.refresh_token || response.data?.refresh_token;
-      const userRaw = response.user || (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !response.data.access_token ? response.data : undefined);
-      const user = (userRaw && typeof userRaw === 'object') ? (userRaw as User) : null;
 
-      setToken(access_token, refresh_token);
-      if (user) {
-        setUser(user);
-        set({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
+      if (access_token) {
+        setToken(access_token, refresh_token);
+        
+        // Fetch user profile after successful login
+        try {
+          const userProfile = await userApi.getProfile();
+          const user = (userProfile && typeof userProfile === 'object') ? (userProfile as User) : null;
+          
+          if (user) {
+            setUser(user);
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+          } else {
+            throw new Error('Failed to fetch user profile');
+          }
+        } catch (profileError) {
+          // If profile fetch fails, still consider login successful but without user data
+          set({
+            user: null,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        }
       } else {
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+        throw new Error('No access token received');
       }
     } catch (error: any) {
       let errorMsg = error.message || 'Login failed';
@@ -75,25 +87,37 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const response: any = await authApi.register(userData);
       const access_token = response.access_token || response.data?.access_token;
       const refresh_token = response.refresh_token || response.data?.refresh_token;
-      const userRaw = response.user || (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && !response.data.access_token ? response.data : undefined);
-      const user = (userRaw && typeof userRaw === 'object') ? (userRaw as User) : null;
 
-      setToken(access_token, refresh_token);
-      if (user) {
-        setUser(user);
-        set({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
+      if (access_token) {
+        setToken(access_token, refresh_token);
+        
+        // Fetch user profile after successful registration
+        try {
+          const userProfile = await userApi.getProfile();
+          const user = (userProfile && typeof userProfile === 'object') ? (userProfile as User) : null;
+          
+          if (user) {
+            setUser(user);
+            set({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+          } else {
+            throw new Error('Failed to fetch user profile');
+          }
+        } catch (profileError) {
+          // If profile fetch fails, still consider registration successful but without user data
+          set({
+            user: null,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        }
       } else {
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+        throw new Error('No access token received');
       }
     } catch (error: any) {
       let errorMsg = error.message || 'Registration failed';
@@ -154,24 +178,36 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   loadUser: async () => {
     const token = getToken();
+
     if (token) {
+      set({ isLoading: true });
       try {
         const userRaw = await userApi.getProfile();
+  
         const user = (userRaw && typeof userRaw === 'object') ? (userRaw as User) : null;
-        if (user) setUser(user);
-        set({
-          user,
-          isAuthenticated: !!user,
-          isLoading: false,
-          error: null,
-        });
+        
+        if (user) {
+          setUser(user); // Save to localStorage for offline access
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        } else {
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: 'Invalid user data received',
+          });
+        }
       } catch (error) {
-        removeToken();
         set({
           user: null,
           isAuthenticated: false,
           isLoading: false,
-          error: null,
+          error: 'Failed to load user profile',
         });
       }
     } else {

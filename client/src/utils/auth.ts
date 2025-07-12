@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { User } from '../types';
 
 const ACCESS_TOKEN_KEY = 'skillswap_access_token';
@@ -5,32 +6,32 @@ const REFRESH_TOKEN_KEY = 'skillswap_refresh_token';
 const USER_KEY = 'skillswap_user';
 
 export const setToken = (accessToken: string, refreshToken?: string) => {
-  sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
   if (refreshToken) {
-    sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   }
 };
 
 export const getToken = (): string | null => {
-  return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
 };
 
 export const getRefreshToken = (): string | null => {
-  return sessionStorage.getItem(REFRESH_TOKEN_KEY);
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
 };
 
 export const removeToken = () => {
-  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
-  sessionStorage.removeItem(USER_KEY);
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 };
 
 export const setUser = (user: User) => {
-  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
 export const getUser = (): User | null => {
-  const user = sessionStorage.getItem(USER_KEY);
+  const user = localStorage.getItem(USER_KEY);
   return user ? JSON.parse(user) : null;
 };
 
@@ -66,18 +67,17 @@ export const refreshAccessToken = async (): Promise<string | null> => {
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/token/refresh/`, {
-      method: 'POST',
+    const response = await axios.post(`${API_BASE_URL}/api/v1/token/refresh/`, {
+      refresh: refreshToken
+    }, {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ refresh: refreshToken }),
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      setToken(data.access, refreshToken);
-      return data.access;
+    if (response.status === 200 && response.data) {
+      setToken(response.data.access, refreshToken);
+      return response.data.access;
     }
   } catch (error) {
     console.error('Failed to refresh token:', error);

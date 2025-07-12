@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -57,7 +57,7 @@ interface RegisterModalProps {
 export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register: authRegister, isLoading, error: errorStore } = useAuth();
+  const { register: authRegister, isLoading, error: errorStore } = useAuthStore();
   const { toast } = useToast();
   const [, navigate] = useLocation();
 

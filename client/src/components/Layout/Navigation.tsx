@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { Zap, Menu, X, Bell, User, Settings, LogOut } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { GlassButton } from '../common/GlassButton';
 import { useApp } from '../../contexts/AppContext';
 import { LoginModal } from '../Auth/LoginModal';
@@ -16,9 +16,11 @@ export const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<'login' | 'register' | 'forgot-password' | null>(null);
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const notifications = (useApp() as any).notifications || [];
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
+
+  console.log('NAV isAuthenticated:', isAuthenticated, 'user:', user);
 
   const handleLogout = async () => {
     await logout();

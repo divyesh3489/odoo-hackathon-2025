@@ -1,3 +1,4 @@
+import axios, { AxiosResponse, AxiosError } from 'axios';
 import { getToken, removeToken, refreshAccessToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -9,93 +10,90 @@ export class ApiError extends Error {
   }
 }
 
-const apiRequest = async (
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<Response> => {
-  let token = getToken();
-  
-  const config: RequestInit = {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    },
-  };
+// Create axios instance
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+// Request interceptor to add token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-  // If token is expired, try to refresh it
-  if (response.status === 401 && token) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      // Retry the request with the new token
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${newToken}`,
-      };
-      response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    } else {
-      // Refresh failed, remove tokens and redirect
+// Response interceptor to handle token refresh
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as any;
+    
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      const token = getToken();
+      if (token) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          // Retry the request with the new token
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return axiosInstance(originalRequest);
+        } else {
+          // Refresh failed, remove tokens and redirect
+          removeToken();
+          window.location.href = '/';
+          throw new ApiError(401, 'Authentication required');
+        }
+      }
+    }
+
+    if (error.response?.status === 401) {
       removeToken();
       window.location.href = '/';
       throw new ApiError(401, 'Authentication required');
     }
-  }
 
-  if (response.status === 401) {
-    removeToken();
-    window.location.href = '/';
-    throw new ApiError(401, 'Authentication required');
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    // Handle other errors
+    const errorData = error.response?.data as any || {};
     throw new ApiError(
-      response.status,
-      errorData.message || errorData.detail || `HTTP error! status: ${response.status}`
+      error.response?.status || 500,
+      errorData.message || errorData.detail || error.message || 'Network error'
     );
   }
-
-  return response;
-};
+);
 
 export const api = {
   get: async <T>(endpoint: string): Promise<T> => {
-    const response = await apiRequest(endpoint);
-    return response.json();
+    const response: AxiosResponse<T> = await axiosInstance.get(endpoint);
+    return response.data;
   },
 
   post: async <T>(endpoint: string, data?: any): Promise<T> => {
-    const response = await apiRequest(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-    return response.json();
+    const response: AxiosResponse<T> = await axiosInstance.post(endpoint, data);
+    return response.data;
   },
 
   put: async <T>(endpoint: string, data?: any): Promise<T> => {
-    const response = await apiRequest(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-    return response.json();
+    const response: AxiosResponse<T> = await axiosInstance.put(endpoint, data);
+    return response.data;
   },
 
   patch: async <T>(endpoint: string, data?: any): Promise<T> => {
-    const response = await apiRequest(endpoint, {
-      method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-    return response.json();
+    const response: AxiosResponse<T> = await axiosInstance.patch(endpoint, data);
+    return response.data;
   },
 
   delete: async <T>(endpoint: string): Promise<T> => {
-    const response = await apiRequest(endpoint, {
-      method: 'DELETE',
-    });
-    return response.json();
+    const response: AxiosResponse<T> = await axiosInstance.delete(endpoint);
+    return response.data;
   },
 };
 
@@ -150,20 +148,13 @@ export const userApi = {
     const formData = new FormData();
     formData.append('profile_image', file);
     
-    const token = getToken();
-    const response = await fetch(`${API_BASE_URL}/api/v1/profile/`, {
-      method: 'PUT',
+    const response = await axiosInstance.put('/api/v1/profile/', formData, {
       headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData,
     });
 
-    if (!response.ok) {
-      throw new ApiError(response.status, 'Failed to upload photo');
-    }
-
-    return response.json();
+    return response.data;
   },
 };
 

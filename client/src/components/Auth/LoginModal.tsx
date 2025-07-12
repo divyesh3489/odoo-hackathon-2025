@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { GlassButton } from '../common/GlassButton';
 import { GlassInput } from '../common/GlassInput';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -33,7 +33,7 @@ export const LoginModal = ({
   onSwitchToForgotPassword 
 }: LoginModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading, error: errorStore } = useAuth();
+  const { login, isLoading, error: errorStore } = useAuthStore();
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
