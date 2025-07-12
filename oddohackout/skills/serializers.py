@@ -16,10 +16,12 @@ class UserSkillsSerializer(serializers.ModelSerializer):
     """
     Serializer for UserSkills model
     """
-    skill = serializers.CharField(source='skill.name', read_only=True)
+    skill_id = serializers.IntegerField(source='skill.id', read_only=True)
+    skill_name = serializers.CharField(source='skill.name', read_only=True)
+    
     class Meta:
         model = UserSkills
-        fields = ['skill', 'created_at']
+        fields = ['skill_id', 'skill_name', 'type', 'created_at']
         read_only_fields = ['created_at']
 
 class SkillRequestSerializer(serializers.ModelSerializer):
