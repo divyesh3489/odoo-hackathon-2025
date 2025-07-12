@@ -69,13 +69,17 @@ class UserDetailUpdateDeleteSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = get_user_model()
-        fields = ['id', 'email', 'username','first_name','last_name','profile_image']
+        fields = ['id', 'email', 'username','first_name','last_name','profile_image', 'availability', 'is_banned', 'is_privete']
         read_only_fields = ['id', 'email', 'username']
         extra_kwargs = {'profile_image': {'required': False}}
 
     def update(self, instance, validated_data):
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.availability = validated_data.get('availability', instance.availability)
+        instance.is_banned = validated_data.get('is_banned', instance.is_banned)
+        instance.is_privete = validated_data.get('is_privete', instance.is_privete)
+        
         
         if 'profile_image' in validated_data:
             instance.profile_image = validated_data['profile_image']
