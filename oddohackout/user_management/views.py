@@ -5,8 +5,9 @@ from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from user_management.serializers import CustomTokenObtainPairSerializer,UserSerializer,UserDetailUpdateDeleteSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
-
-
+from skills.serializers import UserSkillsSerializer
+from skills.models import UserSkills
+from django.contrib.auth import get_user_model
 
 
 # Create your views here.
@@ -28,7 +29,15 @@ class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.get_serializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        want_skills_queryset = UserSkills.objects.filter(user=user, type='want')
+        offer_skills_queryset = UserSkills.objects.filter(user=user, type='offer')
+        want_skills_serializer = UserSkillsSerializer(want_skills_queryset, many=True)
+        offer_skills_serializer = UserSkillsSerializer(offer_skills_queryset, many=True)
+        data['want_skills'] = want_skills_serializer.data
+        data['offer_skills'] = offer_skills_serializer.data
+        
+        return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, *args, **kwargs):
         user = self.get_object()
@@ -42,3 +51,18 @@ class UserDetailUpdateView(RetrieveUpdateDestroyAPIView):
         user.delete()
         return Response({"message":"profile deleted successfuly"},status=status.HTTP_204_NO_CONTENT)
     
+
+class GetUserListView(APIView):
+    def get(self, request, *args, **kwargs):
+        
+        user_list = []
+        User = get_user_model()
+        for user in User.objects.all():
+            user_data = UserSerializer(user).data
+            want_skills = UserSkills.objects.filter(user=user, type='want')
+            offer_skills = UserSkills.objects.filter(user=user, type='offer')
+            user_data['want_skills'] = UserSkillsSerializer(want_skills, many=True).data
+            user_data['offer_skills'] = UserSkillsSerializer(offer_skills, many=True).data
+            user_list.append(user_data)
+
+        return Response(user_list, status=status.HTTP_200_OK)
