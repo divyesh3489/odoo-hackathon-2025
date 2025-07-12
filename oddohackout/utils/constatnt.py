@@ -1,3 +1,8 @@
+
+class SkillTypeConstants:
+    WANT = "want"
+    OFFER = "offer"
+
 class StatusConstants:
     """
     Class to hold status constants for various operations.
