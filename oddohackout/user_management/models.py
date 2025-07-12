@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser,BaseUserManager,PermissionsMixin
+from django_utils import choices
+from utils.constatnt import AvailabilityConstants
 
 
 class CustomUserManager(BaseUserManager):
@@ -36,6 +38,21 @@ class Users(AbstractUser,PermissionsMixin):
     Custom User model that extends the default Django user model.
     """
 
+    class AvailabilityChoices(choices.Choices):
+        Weekdays = choices.Choice(AvailabilityConstants.WEEKDAYS, 'Weekdays')
+        Weekends = choices.Choice(AvailabilityConstants.WEEKENDS, 'Weekends')
+        Evenings = choices.Choice(AvailabilityConstants.EVEINGS, 'Evenings')
+        Mornings = choices.Choice(AvailabilityConstants.MORNINGS, 'Mornings')
+        Afternoons = choices.Choice(AvailabilityConstants.AFTERNOONS, 'Afternoons')
+        Nights = choices.Choice(AvailabilityConstants.NIGHTS, 'Nights')
+        Monday = choices.Choice(AvailabilityConstants.MONDAYS, 'Monday')
+        Tuesday = choices.Choice(AvailabilityConstants.TUESDAYS, 'Tuesday')
+        Wednesday = choices.Choice(AvailabilityConstants.WEDNESDAYS, 'Wednesday')
+        Thursday = choices.Choice(AvailabilityConstants.THURSDAYS, 'Thursday')
+        Friday = choices.Choice(AvailabilityConstants.FRIDAYS, 'Friday')
+        Saturday = choices.Choice(AvailabilityConstants.SATURDAYS, 'Saturday')
+        Sunday = choices.Choice(AvailabilityConstants.SUNDAYS, 'Sunday')
+
     email = models.EmailField(unique=True, blank=False, null=False)
     username = models.CharField(max_length=150, unique=True, blank=False, null=False)
     password = models.CharField(max_length=128, blank=False, null=False)
@@ -45,7 +62,26 @@ class Users(AbstractUser,PermissionsMixin):
     first_name = models.CharField(max_length=30, blank=True, null=True)
     last_name = models.CharField(max_length=30, blank=True, null=True)
     profile_image = models.ImageField(upload_to='user_profiles/', blank=True, null=True,default='user_profiles/default_profile.png')
+    availability = models.JSONField(default=list, blank=True, help_text="Select multiple availability options")
+    is_banned = models.BooleanField(default=False, help_text="Indicates if the user is banned from the platform")
+    is_privete =  models.BooleanField(default=False, help_text="Indicates if the user profile is private")
     objects = CustomUserManager()
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
+    
+    def clean(self):
+        """Validate that availability contains only valid choices"""
+        from django.core.exceptions import ValidationError
+        if self.availability:
+            valid_choices = [choice for choice, _ in self.AvailabilityChoices]
+            for item in self.availability:
+                if item not in valid_choices:
+                    raise ValidationError(f"'{item}' is not a valid availability choice")
+    
+    def get_availability_display(self):
+        """Return human-readable availability options"""
+        if not self.availability:
+            return []
+        choice_dict = dict(self.AvailabilityChoices)
+        return [choice_dict.get(item, item) for item in self.availability]
 
