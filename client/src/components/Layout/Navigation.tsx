@@ -8,14 +8,13 @@ import { useApp } from '../../contexts/AppContext';
 import { LoginModal } from '../Auth/LoginModal';
 import { RegisterModal } from '../Auth/RegisterModal';
 import { ForgotPasswordModal } from '../Auth/ForgotPasswordModal';
+import { Portal } from "../common/Portal"; // adjust path as needed
 
 export const Navigation = () => {
   const [location] = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState<'login' | 'register' | 'forgot-password' | null>(null);
   const { isAuthenticated, user, logout } = useAuth();
   const { notifications } = useApp();
 
@@ -146,13 +145,13 @@ export const Navigation = () => {
             ) : (
               <>
                 <GlassButton
-                  onClick={() => setIsLoginOpen(true)}
+                  onClick={() => setActiveModal('login')}
                   className="text-gray-700 hover:text-blue-600"
                 >
                   Sign In
                 </GlassButton>
                 <GlassButton
-                  onClick={() => setIsRegisterOpen(true)}
+                  onClick={() => setActiveModal('register')}
                   variant="primary"
                   className="hover-lift"
                 >
@@ -205,36 +204,25 @@ export const Navigation = () => {
       </div>
 
       {/* Auth Modals */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        onSwitchToRegister={() => {
-          setIsLoginOpen(false);
-          setIsRegisterOpen(true);
-        }}
-        onSwitchToForgotPassword={() => {
-          setIsLoginOpen(false);
-          setIsForgotPasswordOpen(true);
-        }}
-      />
-
-      <RegisterModal
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onSwitchToLogin={() => {
-          setIsRegisterOpen(false);
-          setIsLoginOpen(true);
-        }}
-      />
-
-      <ForgotPasswordModal
-        isOpen={isForgotPasswordOpen}
-        onClose={() => setIsForgotPasswordOpen(false)}
-        onSwitchToLogin={() => {
-          setIsForgotPasswordOpen(false);
-          setIsLoginOpen(true);
-        }}
-      />
+      // ...inside your Navigation component's return:
+      <Portal>
+        <LoginModal
+          isOpen={activeModal === 'login'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToRegister={() => setActiveModal('register')}
+          onSwitchToForgotPassword={() => setActiveModal('forgot-password')}
+        />
+        <RegisterModal
+          isOpen={activeModal === 'register'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToLogin={() => setActiveModal('login')}
+        />
+        <ForgotPasswordModal
+          isOpen={activeModal === 'forgot-password'}
+          onClose={() => setActiveModal(null)}
+          onSwitchToLogin={() => setActiveModal('login')}
+        />
+      </Portal>
     </nav>
   );
 };
