@@ -179,7 +179,7 @@ export const ProfileForm = () => {
               Availability
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {['Weekdays', 'Weekends', 'Evenings', 'Mornings', 'Afternoons', 'Nights'].map((time) => (
+              {['weekdays', 'weekends', 'evenings', 'mornings', 'afternoons', 'nights' , 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((time) => (
                 <label key={time} className="flex items-center">
                   <input
                     type="checkbox"
@@ -265,16 +265,8 @@ export const ProfileForm = () => {
             </div>
           </div>
 
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-            <textarea
-              {...register('bio')}
-              rows={4}
-              className="w-full px-4 py-3 glass-input text-gray-700"
-              placeholder="Tell others about yourself and your experience..."
-            />
-          </div>
+        
+         
 
           {/* Action Buttons */}
           <div className="flex space-x-4 pt-6">

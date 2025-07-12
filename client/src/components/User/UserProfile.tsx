@@ -69,13 +69,7 @@ export const UserProfile = ({
               </div>
             </div>
 
-            {/* Bio */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">About</h3>
-              <p className="text-gray-700 leading-relaxed">
-                {user.bio || "No bio available yet."}
-              </p>
-            </div>
+            
 
             {/* Skills */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

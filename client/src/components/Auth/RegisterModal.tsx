@@ -55,7 +55,7 @@ interface RegisterModalProps {
 export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register: authRegister, isLoading, error } = useAuth();
+  const { register: authRegister, isLoading, error: errorStore } = useAuth();
   const { toast } = useToast();
 
   const {
@@ -123,7 +123,7 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorStore || (error instanceof Error ? error.message : "An error occurred"),
         variant: "destructive",
       });
     }
@@ -224,7 +224,7 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
               Availability (Optional)
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {['Weekdays', 'Weekends', 'Evenings', 'Mornings', 'Afternoons', 'Nights'].map((time) => (
+              {['weekdays', 'weekends', 'evenings', 'mornings', 'afternoons', 'nights' , 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((time) => (
                 <label key={time} className="flex items-center">
                   <input
                     type="checkbox"
@@ -254,9 +254,9 @@ export const RegisterModal = ({ isOpen, onClose, onSwitchToLogin }: RegisterModa
             )}
           </div>
 
-          {error && (
+          {errorStore && (
             <div className="text-red-600 text-sm bg-red-50/50 p-3 rounded-lg">
-              {error}
+              {errorStore}
             </div>
           )}
 

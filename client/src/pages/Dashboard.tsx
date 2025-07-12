@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { useApp } from '../contexts/AppContext';
 import { StatsCard } from '../components/Dashboard/StatsCard';
 import { ActivityCard } from '../components/Dashboard/ActivityCard';
 import { GlassCard } from '../components/common/GlassCard';
@@ -11,7 +10,6 @@ import { useLocation } from 'wouter';
 
 const Dashboard = () => {
   const { isAuthenticated, user } = useAuth();
-  const { fetchNotifications, fetchSwapRequests } = useApp();
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -19,10 +17,7 @@ const Dashboard = () => {
       navigate('/');
       return;
     }
-
-    fetchNotifications();
-    fetchSwapRequests();
-  }, [isAuthenticated, navigate, fetchNotifications, fetchSwapRequests]);
+  }, [isAuthenticated, navigate]);
 
   if (!isAuthenticated) {
     return null;

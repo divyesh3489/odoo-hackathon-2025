@@ -31,7 +31,7 @@ export const LoginModal = ({
   onSwitchToForgotPassword 
 }: LoginModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading, error: errorStore } = useAuth();
   const { toast } = useToast();
 
   const {
@@ -55,7 +55,7 @@ export const LoginModal = ({
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorStore || (error instanceof Error ? error.message : "An error occurred"),
         variant: "destructive",
       });
     }
@@ -129,9 +129,9 @@ export const LoginModal = ({
             </button>
           </div>
 
-          {error && (
+          {errorStore && (
             <div className="text-red-600 text-sm bg-red-50/50 p-3 rounded-lg">
-              {error}
+              {errorStore}
             </div>
           )}
 
